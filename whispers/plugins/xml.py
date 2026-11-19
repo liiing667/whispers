@@ -3,6 +3,7 @@ from typing import Iterator
 
 from lxml import etree as ElementTree
 
+from whispers.core.constants import MAX_XML_SIZE, REGEX_XML_DTD
 from whispers.core.utils import global_exception_handler
 from whispers.models.pair import KeyValuePair
 from whispers.plugins.common import Common
@@ -67,10 +68,27 @@ class Xml:
                     self.keypath.pop()
 
         try:
-            parser = ElementTree.XMLParser(recover=True)
-            tree = ElementTree.parse(filepath.as_posix(), parser)
+            data = filepath.read_bytes()
+
+            if len(data) > MAX_XML_SIZE:
+                raise ValueError(f"XML document exceeds size budget of {MAX_XML_SIZE} bytes")
+
+            # DTDs and entity declarations enable XXE reads and entity expansion DoS.
+            if REGEX_XML_DTD.search(data):
+                raise ValueError("XML documents with DTD or entity declarations are not allowed")
+
+            # Hardened parser: no entity resolution, no network, no DTD, no huge trees.
+            parser = ElementTree.XMLParser(
+                recover=True,
+                resolve_entities=False,
+                no_network=True,
+                load_dtd=False,
+                dtd_validation=False,
+                huge_tree=False,
+            )
+            tree = ElementTree.fromstring(data, parser)
             tree = ElementTree.iterwalk(tree, events=("start", "end"))
             yield from _traverse(tree)
 
         except Exception:
-            global_exception_handler(filepath.as_posix(), tree)
+            global_exception_handler(filepath.as_posix(), "whispers.plugins.xml.Xml.pairs()")

@@ -5,7 +5,11 @@ DEFAULT_PATH = Path(__file__).parents[1]
 
 DEFAULT_SEVERITY = ["Critical", "High", "Medium", "Low", "Info"]
 
+MAX_XML_SIZE = 10 * 1024 * 1024  # 10 MiB budget for parsed XML documents
+
 ESCAPED_CHARS = str.maketrans({"'": r"\'", '"': r"\""})
+
+REGEX_XML_DTD = compile(rb"<!(?:DOCTYPE|ENTITY)\b", flags=IGNORECASE)
 
 REGEX_URI = compile(r"[:\w\d]+://.+", flags=IGNORECASE)
 REGEX_PATH = compile(r"^((([A-Z]|file|root):)?(\.+)?[/\\]+).*$", flags=IGNORECASE)
