@@ -11,7 +11,10 @@ from whispers.core.scope import load_scope
     [
         (fixture_path("404"), 0),
         (fixture_path(".npmrc"), 1),
-        (fixture_path(), len(list(FIXTURE_PATH.rglob("**/*")))),
+        (
+            fixture_path(),
+            len([path for path in FIXTURE_PATH.rglob("**/*") if path.is_file() and not path.is_symlink()]),
+        ),
     ],
 )
 def test_load_scope(src, expected):
