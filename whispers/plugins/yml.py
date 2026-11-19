@@ -4,26 +4,31 @@ from typing import Iterator
 
 import yaml
 from yaml.parser import ParserError
-from yaml.resolver import Resolver
 
 from whispers.core.utils import global_exception_handler
 from whispers.models.pair import KeyValuePair
 from whispers.plugins.traverse import StructuredDocument
 
 
+def _constructor(loader, tag_suffix, node):
+    """This is needed to parse IaC syntax"""
+    ret = loader.construct_scalar(node)
+    return f"{tag_suffix} {ret}"
+
+
+class WhisperLoader(yaml.SafeLoader):
+    """Isolated SafeLoader so scanning never mutates process-global YAML state"""
+
+
+# Remove resolvers for on/off/yes/no on the isolated loader only
+WhisperLoader.yaml_implicit_resolvers = {
+    idx: resolvers for idx, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items() if idx not in "OoYyNn"
+}
+WhisperLoader.add_multi_constructor("", _constructor)
+
+
 class Yml(StructuredDocument):
-    def __init__(self):
-        super().__init__()
-
-        # Remove resolvers for on/off/yes/no
-        list(map(lambda idx: Resolver.yaml_implicit_resolvers.pop(idx, None), "OoYyNn"))
-
     def pairs(self, filepath: Path) -> Iterator[KeyValuePair]:
-        def _constructor(loader, tag_suffix, node):
-            """This is needed to parse IaC syntax"""
-            ret = loader.construct_scalar(node)
-            return f"{tag_suffix} {ret}"
-
         """
         Convert custom YAML to parsable YAML
         - Skip ---
@@ -48,8 +53,7 @@ class Yml(StructuredDocument):
 
         # Load converted YAML
         try:
-            yaml.add_multi_constructor("", _constructor, Loader=yaml.SafeLoader)
-            code = yaml.safe_load(document)
+            code = yaml.load(document, Loader=WhisperLoader)
             yield from self.traverse(code)
 
         except ParserError:
