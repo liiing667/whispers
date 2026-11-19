@@ -1,0 +1,5 @@
+# Compliant
+variable_password: ${PASSWORD}
+
+# Noncompliant
+static_password: HardcodedRedactionSecret01

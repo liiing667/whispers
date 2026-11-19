@@ -77,8 +77,11 @@ whispers -a dir/or/file
 # Write JSON results to a file instead of the screen
 whispers dir/or/file -o /tmp/secrets.json
 
-# Pipe JSON results downstream
-whispers dir/or/file | jq '.[].value'
+# Pipe JSON results downstream (values are redacted by default)
+whispers dir/or/file | jq '.[].fingerprint'
+
+# Disable redaction and print raw secret values (legacy, insecure)
+whispers --raw dir/or/file | jq '.[].value'
 
 # Custom usage:
 #   - only check 'keys' rule group
@@ -86,6 +89,8 @@ whispers dir/or/file | jq '.[].value'
 #   - everywhere in target/dir except for .log & .raw files (regex)
 whispers -g keys -s Critical,High -F '.*\.(log|raw)' target/dir
 ```
+
+Findings are redacted by default: logs and JSON output contain a stable `fingerprint` (SHA-256 of file, key and value), the value length, position and rule information, but never the raw secret value. Use `--raw` (CLI) or `secret.to_json(redact=False)` (API) to restore the legacy plaintext output format.
 
 ```bash
 # Configuration file template

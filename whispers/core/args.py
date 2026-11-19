@@ -17,6 +17,11 @@ def argument_parser() -> ArgumentParser:
     args_parser.add_argument("-a", "--ast", action="store_true", help="enable AST analysis")
     args_parser.add_argument("-c", "--config", default=None, help="config filename")
     args_parser.add_argument("-o", "--output", default=None, help="output filename")
+    args_parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="disable output redaction and print raw secret values (legacy, insecure)",
+    )
     args_parser.add_argument("-l", "--log", default=None, help="log filename")
     args_parser.add_argument(
         "-v",

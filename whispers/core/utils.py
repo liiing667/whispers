@@ -3,6 +3,7 @@ import re
 import string
 from base64 import b64decode
 from pathlib import Path
+from sys import exc_info
 from typing import List, Optional, Pattern, Union
 
 from jellyfish import jaro_winkler_similarity
@@ -14,8 +15,14 @@ from whispers.models.pair import KeyValuePair
 
 
 def global_exception_handler(file: Union[str, Path], data: str = ""):
-    """Global Exception Handler"""
-    logging.debug(f"Failed parsing file '{str(file)}'", exc_info=True)
+    """Global Exception Handler
+
+    Never logs exception messages or tracebacks, as parser exceptions
+    may embed raw file content (including secrets) in their output.
+    """
+    exc_type = exc_info()[0]
+    error = exc_type.__name__ if exc_type else "UnknownError"
+    logging.debug(f"Failed parsing file '{str(file)}': {error}")
 
 
 def load_regex(regex: str, flags: Optional[re.RegexFlag] = 0) -> Pattern:

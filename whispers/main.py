@@ -25,7 +25,7 @@ def main() -> None:  # pragma: no cover
     secrets = []
     for secret in run(args):
         logging.warning(str(secret))
-        secrets.append(secret.to_json())
+        secrets.append(secret.to_json(redact=not args.raw))
 
     args.output.write(json.dumps(secrets) + "\n")
 

@@ -13,6 +13,17 @@ def test_pair(rule_fixture):
     }
     assert pair.to_json() == {
         "key": "key",
+        "value": pair.redacted_value,
+        "value_length": 5,
+        "fingerprint": pair.fingerprint,
+        "file": "file",
+        "line": 123,
+        "rule_id": "fixture",
+        "message": "test",
+        "severity": "Info",
+    }
+    assert pair.to_json(redact=False) == {
+        "key": "key",
         "value": "value",
         "file": "file",
         "line": 123,
