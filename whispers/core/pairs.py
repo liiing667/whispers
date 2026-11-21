@@ -63,7 +63,7 @@ def filter_included(config: AppConfig, pair: KeyValuePair) -> Optional[KeyValueP
 
     if config.exclude.values:
         if config.exclude.values.match(pair.value):
-            logging.debug(f"filter_included excluded value '{pair.value}'")
+            logging.debug(f"filter_included excluded value '{pair.masked_value}'")
             return None  # Excluded value
 
     logging.debug(f"filter_included included pair '{pair}'")
@@ -76,10 +76,10 @@ def filter_static(pair: KeyValuePair) -> Optional[KeyValuePair]:
     pair.value = strip_string(pair.value)
 
     if not is_static(pair.key, pair.value):
-        logging.debug(f"filter_static excluded value '{pair.value}'")
+        logging.debug(f"filter_static excluded value '{pair.masked_value}'")
         return None  # Dynamic value
 
-    logging.debug(f"filter_static included value '{pair.value}'")
+    logging.debug(f"filter_static included value '{pair.masked_value}'")
     return pair  # Static value
 
 

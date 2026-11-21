@@ -2,6 +2,7 @@ import logging
 import re
 import string
 from base64 import b64decode
+from hashlib import sha256
 from pathlib import Path
 from typing import List, Optional, Pattern, Union
 
@@ -9,7 +10,18 @@ from jellyfish import jaro_winkler_similarity
 from luhn import verify as luhn_verify
 from yaml import safe_load, safe_load_all
 
-from whispers.core.constants import DEFAULT_PATH, REGEX_ENVVAR, REGEX_IAC, REGEX_PATH, REGEX_SEMVER, REGEX_URI
+from whispers.core.constants import (
+    DEFAULT_PATH,
+    MASK_CHAR,
+    MASK_KEEP,
+    MASK_TOKEN,
+    REGEX_ENVVAR,
+    REGEX_IAC,
+    REGEX_PATH,
+    REGEX_PRIVKEY_VALUE,
+    REGEX_SEMVER,
+    REGEX_URI,
+)
 from whispers.models.pair import KeyValuePair
 
 
@@ -50,6 +62,47 @@ def strip_string(value: str) -> str:
         return ""
 
     return str(value).strip(" '\"\n\r\t")
+
+
+def secret_fingerprint(value: str) -> str:
+    """
+    Stable, non-reversible identity for a discovered secret value.
+
+    The digest is derived only from the raw value itself, so the same
+    credential always yields the same fingerprint across retries,
+    restarts and runs, while the original value cannot be recovered.
+    """
+    if value is None:
+        value = ""
+
+    return sha256(str(value).encode("utf-8")).hexdigest()
+
+
+def mask_secret(value: str, keep: int = MASK_KEEP, char: str = MASK_CHAR) -> str:
+    """
+    Return a deterministic, non-reversible masked representation of a secret.
+
+    The same raw value always produces the same masked output, keeping the
+    identity of the finding stable across retries and restarts without ever
+    exposing the raw intermediate value in logs. At most `keep` leading and
+    trailing characters are retained; short values are redacted entirely.
+    Private keys are reduced to their header line.
+    """
+    if value is None:
+        return MASK_TOKEN
+
+    value = str(value)
+
+    if not value:
+        return MASK_TOKEN
+
+    if REGEX_PRIVKEY_VALUE.match(value):
+        return value.splitlines()[0] + " " + MASK_TOKEN
+
+    if len(value) <= keep * 2:
+        return MASK_TOKEN
+
+    return value[:keep] + (char * (len(value) - keep * 2)) + value[-keep:]
 
 
 def simple_string(value: str) -> str:

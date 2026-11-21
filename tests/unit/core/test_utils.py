@@ -22,6 +22,8 @@ from whispers.core.utils import (
     list_rule_prop,
     load_regex,
     load_yaml_from_file,
+    mask_secret,
+    secret_fingerprint,
     similar_strings,
     simple_string,
     strip_string,
@@ -336,3 +338,55 @@ def test_default_rules():
 def test_list_rule_prop():
     rule = {"id": "rule-id"}
     assert list_rule_prop("id", [rule]) == ["rule-id"]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("AKIAIOSFODHH7HARDSECRET", "AKIA***************CRET"),
+        ("x" * 9, "xxxx*xxxx"),
+        ("short", "***"),
+        ("abc", "***"),
+        ("", "***"),
+        (None, "***"),
+    ],
+)
+def test_mask_secret(value, expected):
+    assert mask_secret(value) == expected
+
+
+def test_mask_secret_never_contains_raw_value():
+    value = "super-secret-token-value-1234567890"
+    masked = mask_secret(value)
+    assert masked != value
+    assert value not in masked
+
+
+def test_mask_secret_deterministic_across_runs():
+    """Retries and restarts must produce the exact same masked output"""
+    value = "AKIAIOSFODHH7HARDSECRET"
+    first = mask_secret(value)
+    second = mask_secret(value)
+    assert first == second
+
+
+def test_mask_secret_private_key():
+    value = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAsecret\n-----END RSA PRIVATE KEY-----"
+    masked = mask_secret(value)
+    assert masked.startswith("-----BEGIN RSA PRIVATE KEY-----")
+    assert "MIIEowIBAAKCAQEAsecret" not in masked
+
+
+def test_secret_fingerprint_stable_and_non_reversible():
+    value = "AKIAIOSFODHH7HARDSECRET"
+    first = secret_fingerprint(value)
+    second = secret_fingerprint(value)
+    assert first == second
+    assert len(first) == 64
+    assert value not in first
+    assert secret_fingerprint(value + "x") != first
+
+
+def test_secret_fingerprint_handles_empty_values():
+    assert secret_fingerprint("") == secret_fingerprint(None)
+    assert len(secret_fingerprint("")) == 64

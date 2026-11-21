@@ -13,6 +13,12 @@ REGEX_IAC = compile(r"\![A-Za-z]+ .+", flags=IGNORECASE)
 REGEX_PRIVKEY_FILE = compile(r"(rsa|dsa|ed25519|ecdsa|pem|crt|cer|ca-bundle|p7b|p7c|p7s|ppk|pkcs12|pfx|p12)")
 REGEX_ENVVAR = compile(r"^\$\$?\{?[A-Z0-9_]+\}?$")
 REGEX_SEMVER = compile(r"^[\^~\-=vV<>]{0,3}([0-9]+\.){1,2}[0-9]+(\-.*)?$")
+REGEX_PRIVKEY_VALUE = compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")
+
+# Masked output keeps this many leading/trailing characters of the raw value.
+MASK_KEEP = 4
+MASK_CHAR = "*"
+MASK_TOKEN = "***"
 
 REGEX_AST_FILE = compile(
     r"(py(thon)?|[jt]s|vue|java(script)?|kts?|scala|php|go(lang)?|c(pp|\+\+|s(harp)?|\#)?|lua|r[bs]?|clj|(g|prom)?ql|tf|proto|jsonnet|ocaml|hack|lisp|dart|julia|hcl|solidity|swift|(ap)?ex)[0-9]*$"
