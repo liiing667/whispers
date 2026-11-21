@@ -70,7 +70,7 @@ class AST:
             return check_output(argv).decode()
 
         except Exception:
-            global_exception_handler(filepath)
+            global_exception_handler(filepath, "AST.dump()")
             return "{}"
 
     @staticmethod

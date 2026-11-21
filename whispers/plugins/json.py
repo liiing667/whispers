@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Dict, Iterator
@@ -39,5 +40,6 @@ class Json(StructuredDocument):
             return json.loads(document)
 
         except Exception:
-            global_exception_handler(filepath.as_posix(), document)
+            logging.debug(f"Json.load_custom_json() unparsable document:\n{document}")
+            global_exception_handler(filepath.as_posix(), "Json.load_custom_json()")
             return {}

@@ -11,12 +11,17 @@ def test_pair(rule_fixture):
         "line": 123,
         "rule": rule_fixture,
     }
+    finding_id = pair.to_json()["id"]
+    assert finding_id and finding_id.startswith("whs-")
     assert pair.to_json() == {
+        "id": finding_id,
         "key": "key",
         "value": "value",
         "file": "file",
         "line": 123,
+        "keypath": ["key", "path"],
         "rule_id": "fixture",
+        "rule_group": "tests",
         "message": "test",
         "severity": "Info",
     }

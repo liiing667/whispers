@@ -73,4 +73,4 @@ class Xml:
             yield from _traverse(tree)
 
         except Exception:
-            global_exception_handler(filepath.as_posix(), tree)
+            global_exception_handler(filepath.as_posix(), "Xml.pairs()")

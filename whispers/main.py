@@ -8,6 +8,7 @@ from typing import Iterator
 
 from whispers.core.args import parse_args
 from whispers.core.config import load_config
+from whispers.core.finding import assign_occurrence_indices, reset_occurrence_counters
 from whispers.core.pairs import make_pairs
 from whispers.core.rules import load_rules
 from whispers.core.scope import load_scope
@@ -41,7 +42,10 @@ def run(args: Namespace) -> Iterator[KeyValuePair]:
     detected = map(lambda pairs: detect_secrets(rules, pairs), parsed)
     secrets = chain.from_iterable(detected)
 
-    return secrets
+    reset_occurrence_counters()
+    # Materialize so occurrence ranks are finalized from the complete finding
+    # set (independent of emission order) before any ID is read.
+    return iter(assign_occurrence_indices(secrets))
 
 
 if __name__ == "__main__":

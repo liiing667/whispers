@@ -21,12 +21,18 @@ class KeyValuePair:
         return f"[{self.file}:{self.line}] {self.key} = {self.value}"
 
     def to_json(self) -> Dict:
+        from whispers.core.finding import finding_id
+
+        rule = self.rule
         return {
+            "id": finding_id(self),
             "key": self.key,
             "value": self.value,
             "file": self.file,
             "line": self.line,
-            "rule_id": self.rule.id,
-            "message": self.rule.message,
-            "severity": self.rule.severity,
+            "keypath": list(self.keypath),
+            "rule_id": getattr(rule, "id", None),
+            "rule_group": getattr(rule, "group", None),
+            "message": getattr(rule, "message", None),
+            "severity": getattr(rule, "severity", None),
         }

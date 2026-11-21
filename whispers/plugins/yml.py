@@ -1,3 +1,4 @@
+import logging
 import re
 from pathlib import Path
 from typing import Iterator
@@ -53,4 +54,5 @@ class Yml(StructuredDocument):
             yield from self.traverse(code)
 
         except ParserError:
-            global_exception_handler(filepath.as_posix(), document)
+            logging.debug(f"Yml.pairs() unparsable document:\n{document}")
+            global_exception_handler(filepath.as_posix(), "Yml.pairs()")

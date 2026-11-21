@@ -14,8 +14,15 @@ from whispers.models.pair import KeyValuePair
 
 
 def global_exception_handler(file: Union[str, Path], data: str = ""):
-    """Global Exception Handler"""
-    logging.debug(f"Failed parsing file '{str(file)}'", exc_info=True)
+    """Global Exception Handler.
+
+    Records the exact failure location: the file being processed, the
+    processing stage (``data``) and the exception type and message, so a
+    failed parse can be traced back to a concrete place instead of being
+    swallowed silently.
+    """
+    stage = data or "unknown stage"
+    logging.exception(f"Failed parsing file '{str(file)}' during {stage}")
 
 
 def load_regex(regex: str, flags: Optional[re.RegexFlag] = 0) -> Pattern:

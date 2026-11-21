@@ -1,3 +1,4 @@
+import logging
 import shlex
 from pathlib import Path
 from typing import Iterator, List, Tuple
@@ -12,7 +13,8 @@ class Shell:
             try:
                 cmd = shlex.split(cmdline)
             except Exception:
-                global_exception_handler(filepath.as_posix(), cmdline)
+                logging.debug(f"Shell unparsable command: {cmdline}")
+                global_exception_handler(filepath.as_posix(), "Shell.pairs()")
                 continue
 
             if not cmd:
