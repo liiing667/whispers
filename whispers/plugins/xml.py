@@ -12,6 +12,10 @@ class Xml:
     def __init__(self):
         self.keypath = []
 
+    def reset(self) -> None:
+        """Clear parser state before or after a document."""
+        self.keypath.clear()
+
     def pairs(self, filepath: Path) -> Iterator[KeyValuePair]:
         def _traverse(tree):
             """Traverse XML document"""
@@ -66,6 +70,8 @@ class Xml:
                     yield from Common(self.keypath).pairs(found_value)
                     self.keypath.pop()
 
+        self.reset()
+        tree = None
         try:
             parser = ElementTree.XMLParser(recover=True)
             tree = ElementTree.parse(filepath.as_posix(), parser)
@@ -73,4 +79,9 @@ class Xml:
             yield from _traverse(tree)
 
         except Exception:
-            global_exception_handler(filepath.as_posix(), tree)
+            global_exception_handler(filepath.as_posix(), "whispers.plugins.xml.Xml.pairs()")
+
+        finally:
+            # Closing a partially consumed generator must not leave element
+            # names behind for the next file handled by this instance.
+            self.reset()

@@ -34,17 +34,61 @@ def make_pairs(config: AppConfig, file: Path) -> Optional[Iterator[KeyValuePair]
     if not plugin:
         return None
 
-    pairs = plugin().pairs(file)
-    static = filter(None, map(filter_static, pairs))
-    included = filter(None, map(lambda pair: filter_included(config, pair), static))
-    tagged = map(lambda pair: tag_file(file, pair), included)
+    plugin_instance = None
+    pairs = None
 
     try:
-        yield from tagged
+        plugin_instance = plugin() if callable(plugin) else plugin
+        reset_plugin(plugin_instance)
+        pairs = plugin_instance.pairs(file)
+
+        for pair in pairs:
+            pair = filter_static(pair)
+            if not pair:
+                continue
+
+            pair = filter_included(config, pair)
+            if not pair:
+                continue
+
+            yield tag_file(file, pair)
 
     except Exception:  # pragma: no cover
         global_exception_handler(file.as_posix(), "make_pairs()")
         return None
+
+    finally:
+        close_plugin(pairs)
+        close_plugin(plugin_instance)
+        reset_plugin(plugin_instance)
+
+
+def reset_plugin(plugin: object) -> None:
+    """Reset all state held by a plugin instance for the current file."""
+    if plugin is None:
+        return
+
+    reset = getattr(plugin, "reset", None)
+    if callable(reset):
+        try:
+            reset()
+
+        except Exception:  # pragma: no cover
+            global_exception_handler(str(plugin), "reset_plugin()")
+
+
+def close_plugin(plugin: object) -> None:
+    """Close a plugin iterator, if it exposes a cleanup hook."""
+    if plugin is None:
+        return
+
+    close = getattr(plugin, "close", None)
+    if callable(close):
+        try:
+            close()
+
+        except Exception:  # pragma: no cover
+            global_exception_handler(str(plugin), "close_plugin()")
 
 
 def tag_file(file: Path, pair: KeyValuePair) -> KeyValuePair:

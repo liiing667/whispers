@@ -13,13 +13,19 @@ class Json(StructuredDocument):
         """
         Try to load JSON as is. Otherwise, try as a custom format.
         """
+        self.reset()
         try:
-            document = json.load(filepath.open())
+            try:
+                document = json.load(filepath.open())
 
-        except json.decoder.JSONDecodeError:
-            document = self.load_custom_json(filepath)
+            except json.decoder.JSONDecodeError:
+                document = self.load_custom_json(filepath)
 
-        yield from self.traverse(document)
+            yield from self.traverse(document)
+
+        finally:
+            # JSON documents can also be abandoned mid-traversal.
+            self.reset()
 
     @staticmethod
     def load_custom_json(filepath: Path) -> Dict:
