@@ -10,6 +10,8 @@ from whispers.models.pair import KeyValuePair
 
 def make_pairs(config: AppConfig, file: Path) -> Optional[Iterator[KeyValuePair]]:
     """Generates KeyValuePair objects by parsing given file"""
+    config_version = getattr(config, "version", None)
+
     try:
         if not file.exists():
             return None
@@ -24,7 +26,10 @@ def make_pairs(config: AppConfig, file: Path) -> Optional[Iterator[KeyValuePair]
     # First, return file name to check if it is a sensitive file
     pair = KeyValuePair("file", file.as_posix())
     if filter_included(config, pair):
-        yield tag_file(file, pair)
+        pair = tag_file(file, pair)
+        if config_version:
+            pair.config_version = config_version
+        yield pair
 
     # Second, attempt to parse the file with a plugin
     plugin = load_plugin(file, config.ast)
@@ -40,7 +45,10 @@ def make_pairs(config: AppConfig, file: Path) -> Optional[Iterator[KeyValuePair]
     tagged = map(lambda pair: tag_file(file, pair), included)
 
     try:
-        yield from tagged
+        for pair in tagged:
+            if config_version:
+                pair.config_version = config_version
+            yield pair
 
     except Exception:  # pragma: no cover
         global_exception_handler(file.as_posix(), "make_pairs()")

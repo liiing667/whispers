@@ -6,6 +6,8 @@ from typing import Dict, List
 class KeyValuePair:
     """Main key-value pair class"""
 
+    config_version = None  # Attached by a scan to identify the config snapshot
+
     key: str
     value: str
     keypath: List = field(default_factory=list)
@@ -21,7 +23,7 @@ class KeyValuePair:
         return f"[{self.file}:{self.line}] {self.key} = {self.value}"
 
     def to_json(self) -> Dict:
-        return {
+        result = {
             "key": self.key,
             "value": self.value,
             "file": self.file,
@@ -30,3 +32,8 @@ class KeyValuePair:
             "message": self.rule.message,
             "severity": self.rule.severity,
         }
+        config_version = getattr(self, "config_version", None)
+        if config_version:
+            result["config_version"] = config_version
+
+        return result

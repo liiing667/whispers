@@ -1,11 +1,12 @@
 import logging
 from argparse import Namespace
+from hashlib import sha256
 from pathlib import Path
 from sys import platform
 
 from whispers.core.constants import DEFAULT_PATH
 from whispers.core.utils import load_yaml_from_file
-from whispers.models.appconfig import AppConfig
+from whispers.models.appconfig import AppConfig, config_digest
 
 
 def load_config(args: Namespace) -> dict:
@@ -37,6 +38,7 @@ def load_config(args: Namespace) -> dict:
         raise TypeError(f"{configfile.as_posix()} is not a file")
 
     try:
+        config_source = configfile.read_bytes()
         config = AppConfig(load_yaml_from_file(configfile))
         config.ast = args.ast or config.ast
         config.ast ^= platform.startswith("win")  # Semgrep does not support Windows
@@ -48,6 +50,10 @@ def load_config(args: Namespace) -> dict:
         config.exclude.severity = args.xseverity or config.exclude.severity
         config.include.files = args.files or config.include.files
         config.exclude.files = args.xfiles or config.exclude.files
+        config.source = configfile.as_posix()
+        config.source_digest = sha256(config_source).hexdigest()
+        config.config_digest = config_digest(config)
+        config.version = config.config_digest
 
     except Exception:
         raise RuntimeError(f"{configfile.as_posix()} is invalid")

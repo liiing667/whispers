@@ -10,7 +10,7 @@ from whispers.core.args import parse_args
 from whispers.core.config import load_config
 from whispers.core.pairs import make_pairs
 from whispers.core.rules import load_rules
-from whispers.core.scope import load_scope
+from whispers.core.scope import load_scope, snapshot_config
 from whispers.core.secrets import detect_secrets
 from whispers.models.pair import KeyValuePair
 
@@ -35,13 +35,25 @@ def main() -> None:  # pragma: no cover
 def run(args: Namespace) -> Iterator[KeyValuePair]:
     """Main worker process"""
     config = load_config(args)
-    rules = load_rules(args, config)
-    scope = load_scope(args, config)
-    parsed = map(lambda file: make_pairs(config, file), scope)
+    scan_config = snapshot_config(config)
+    rules = load_rules(args, scan_config.config)
+    scope = load_scope(args, scan_config.config, snapshot=scan_config)
+    snapshot = getattr(scope, "snapshot", scan_config)
+    parsed = map(lambda file: make_pairs(snapshot.config, file), scope)
     detected = map(lambda pairs: detect_secrets(rules, pairs), parsed)
     secrets = chain.from_iterable(detected)
 
-    return secrets
+    args.config_version = snapshot.version
+    args.scan_report = snapshot.report()
+
+    return _tag_config_version(secrets, snapshot.version)
+
+
+def _tag_config_version(secrets: Iterator[KeyValuePair], version: str) -> Iterator[KeyValuePair]:
+    """Attach the version of the config snapshot used to every result"""
+    for secret in secrets:
+        secret.config_version = version
+        yield secret
 
 
 if __name__ == "__main__":
