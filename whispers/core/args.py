@@ -18,6 +18,64 @@ def argument_parser() -> ArgumentParser:
     args_parser.add_argument("-c", "--config", default=None, help="config filename")
     args_parser.add_argument("-o", "--output", default=None, help="output filename")
     args_parser.add_argument("-l", "--log", default=None, help="log filename")
+    args_parser.add_argument("--git", action="store_true", help="scan Git history")
+    args_parser.add_argument(
+        "--git-history",
+        "--history",
+        dest="git_history",
+        action="store_true",
+        help="scan Git history",
+    )
+    args_parser.add_argument(
+        "--git-range",
+        "--history-range",
+        "--rev-range",
+        "--revision",
+        dest="git_range",
+        default=None,
+        help="Git revision or range to scan (default: HEAD)",
+    )
+    args_parser.add_argument(
+        "--git-state",
+        "--history-state",
+        "--state-file",
+        "--state",
+        "--git-state-file",
+        "--history-checkpoint",
+        dest="git_state",
+        default=None,
+        help="resumable Git history state file",
+    )
+    args_parser.add_argument(
+        "--git-resume",
+        "--resume",
+        dest="git_resume",
+        action="store_true",
+        help="resume the frozen Git history generation",
+    )
+    args_parser.add_argument(
+        "--git-reset",
+        "--reset",
+        dest="git_reset",
+        action="store_true",
+        help="start a new Git history generation",
+    )
+    args_parser.add_argument(
+        "--git-depth",
+        "--history-depth",
+        "--max-commits",
+        dest="git_depth",
+        type=int,
+        default=None,
+        help="maximum number of commits in the history snapshot",
+    )
+    args_parser.add_argument(
+        "--git-repo",
+        "--repo",
+        dest="git_repo",
+        default=None,
+        help="Git repository to scan (defaults to src)",
+    )
     args_parser.add_argument(
         "-v",
         "--verbose",
@@ -60,6 +118,9 @@ def parse_args(arguments: list = argv[1:]) -> Namespace:
     if args.init:
         show_config()
         exit()
+
+    if not args.src and args.git_repo:
+        args.src = args.git_repo
 
     if not args.src:
         argument_parser().print_help()
@@ -111,6 +172,25 @@ def parse_args(arguments: list = argv[1:]) -> Namespace:
 
     if args.xseverity:
         args.xseverity = args.xseverity.split(",")
+
+    # Keep the history switches aliases of one accepted operation.
+    args.git_history = bool(args.git or args.git_history)
+    args.history = args.git_history
+    args.git = args.git_history
+    if args.git_range:
+        args.git_history = True
+        args.history = True
+        args.git = True
+
+    args.state = args.git_state
+    args.history_state = args.git_state
+    args.history_state_path = args.git_state
+    args.git_state_path = args.git_state
+    args.rev_range = args.git_range
+    args.revision = args.git_range
+    args.git_ref = args.git_range
+    args.history_revision = args.git_range
+    args.max_commits = args.git_depth
 
     return args
 

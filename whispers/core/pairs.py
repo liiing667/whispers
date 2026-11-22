@@ -14,8 +14,32 @@ def make_pairs(config: AppConfig, file: Path) -> Optional[Iterator[KeyValuePair]
         if not file.exists():
             return None
 
+        if file.is_dir():
+            is_repository = (
+                file.name == ".git"
+                or file.joinpath(".git").exists()
+                or (file.joinpath("HEAD").is_file() and file.joinpath("objects").is_dir())
+            )
+            if not is_repository:
+                return None
+
+            from whispers.plugins.git import Git
+
+            try:
+                yield from Git().pairs(file)
+            except Exception:
+                global_exception_handler(file.as_posix(), "make_pairs()")
+                return None
+            return
+
         if not file.is_file():
             return None
+
+        from whispers.plugins.git import GitLog, looks_like_git_log
+
+        if looks_like_git_log(file):
+            yield from GitLog(file, config).pairs()
+            return
 
     except Exception:  # pragma: no cover
         global_exception_handler(file.as_posix(), "make_pairs()")
@@ -92,6 +116,20 @@ def load_plugin(file: Path, ast: bool = False) -> Optional[object]:
     file_name = file.name.lower()
 
     logging.debug(f"load_plugin: ast:{ast} file:{file}")
+
+    try:
+        if file.is_dir() and (file.name == ".git" or file.joinpath(".git").exists()):
+            from whispers.plugins.git import Git
+
+            return Git
+
+    except OSError:  # pragma: no cover - inaccessible path
+        pass
+
+    if file_name in (".git", "git") or file_name.endswith(".git"):
+        from whispers.plugins.git import Git
+
+        return Git
 
     if file.suffix.lower() in [".dist", ".template"]:
         filetype = file.stem.split(".")[-1].lower()

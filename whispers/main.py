@@ -37,6 +37,12 @@ def run(args: Namespace) -> Iterator[KeyValuePair]:
     config = load_config(args)
     rules = load_rules(args, config)
     scope = load_scope(args, config)
+
+    if getattr(scope, "is_history", False):
+        if hasattr(scope, "findings"):
+            return scope.findings(rules)
+        return detect_secrets(rules, scope)
+
     parsed = map(lambda file: make_pairs(config, file), scope)
     detected = map(lambda pairs: detect_secrets(rules, pairs), parsed)
     secrets = chain.from_iterable(detected)

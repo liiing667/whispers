@@ -16,3 +16,15 @@ def secrets(arguments: str) -> Iterator:
 
     argv = shlex.split(arguments)
     return run(parse_args(argv))
+
+
+def git_history(*args, **kwargs):
+    """Scan a Git history snapshot with resumable commit/blob identity."""
+    from whispers.core.history import scan_git_history
+
+    return scan_git_history(*args, **kwargs)
+
+
+def history(*args, **kwargs):
+    """Alias for :func:`git_history`."""
+    return git_history(*args, **kwargs)
